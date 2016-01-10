@@ -5,8 +5,8 @@ supavolumed: supavolumed.c
 
 .PHONY: install
 install: supavolumed
-	install -d $(PREFIX)/bin
-	install -m755 supavolumed $(PREFIX)/bin/
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m755 supavolumed $(DESTDIR)$(PREFIX)/bin/
 
 .PHONY: clean
 clean:
