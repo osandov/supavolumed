@@ -54,16 +54,14 @@ static void show_volume_notification(unsigned int volume_pct, int muted)
 {
 	const char *icon;
 
-	if (muted)
-		icon = "audio-volume-muted";
-	else if (volume_pct == 0)
-		icon = "audio-volume-off";
+	if (muted || volume_pct == 0)
+		icon = "audio-volume-muted-symbolic";
 	else if (volume_pct < 33)
-		icon = "audio-volume-low";
+		icon = "audio-volume-low-symbolic";
 	else if (volume_pct < 66)
-		icon = "audio-volume-medium";
+		icon = "audio-volume-medium-symbolic";
 	else
-		icon = "audio-volume-high";
+		icon = "audio-volume-high-symbolic";
 
 	if (notification) {
 		GError *err = NULL;
