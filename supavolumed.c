@@ -29,7 +29,7 @@
 #define APP_NAME "supavolumed"
 
 /* Volume increment step in percent. */
-#define VOLUME_INCREMENT 5
+static gint volume_step = 5;
 
 static NotifyNotification *notification;
 
@@ -243,9 +243,9 @@ GdkFilterReturn filter(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	switch (e->type) {
 	case KeyPress:
 		if (e->xkey.keycode == keycodes[RAISE_VOLUME])
-			change_volume(c, +VOLUME_INCREMENT);
+			change_volume(c, +volume_step);
 		else if (e->xkey.keycode == keycodes[LOWER_VOLUME])
-			change_volume(c, -VOLUME_INCREMENT);
+			change_volume(c, -volume_step);
 		else if (e->xkey.keycode == keycodes[MUTE])
 			toggle_mute(c);
 		else if (e->xkey.keycode == keycodes[MIC_MUTE])
@@ -285,6 +285,18 @@ static void exit_signal_callback(pa_mainloop_api *m, pa_signal_event *e, int sig
 
 int main(int argc, char **argv)
 {
+	static const GOptionEntry options[] = {
+		{
+			.long_name = "step",
+			.short_name = 's',
+			.arg = G_OPTION_ARG_INT,
+			.arg_data = &volume_step,
+			.description = "number of percentage points to increase/decrease volume by (default: 5)",
+			.arg_description = "PERCENT",
+		},
+		{ 0 },
+	};
+	GError *error = NULL;
 	pa_glib_mainloop *mainloop;
 	pa_mainloop_api *mainloop_api;
 	pa_context *context;
@@ -292,7 +304,11 @@ int main(int argc, char **argv)
 	int status = EXIT_SUCCESS;
 	int i;
 
-	gtk_init(&argc, &argv);
+	if (!gtk_init_with_args(&argc, &argv, NULL, options, NULL, &error)) {
+		g_printerr("%s\n", error->message);
+		g_error_free(error);
+		return EXIT_FAILURE;
+	}
 
 	mainloop = pa_glib_mainloop_new(NULL);
 	if (!mainloop) {
