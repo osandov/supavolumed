@@ -16,7 +16,6 @@
  */
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <gdk/gdkx.h>
@@ -64,18 +63,19 @@ static void show_volume_notification(unsigned int volume_pct, int muted)
 		icon = "audio-volume-high-symbolic";
 
 	if (notification) {
-		GError *err = NULL;
+		GError *error = NULL;
 
 		if (!notify_notification_update(notification, APP_NAME, NULL, icon)) {
-			fprintf(stderr, "Invalid parameter passed to notify_notification_update()");
+			g_printerr("Invalid parameter passed to notify_notification_update()\n");
 			return;
 		}
 		notify_notification_set_hint_int32(notification, "value",
 						   (gint)volume_pct);
-		notify_notification_show(notification, &err);
-		if (err) {
-			fprintf(stderr, "notify_notification_show() failed: %s\n", err->message);
-			g_error_free(err);
+		notify_notification_show(notification, &error);
+		if (error) {
+			g_printerr("notify_notification_show() failed: %s\n",
+				   error->message);
+			g_error_free(error);
 			return;
 		}
 	}
@@ -83,10 +83,8 @@ static void show_volume_notification(unsigned int volume_pct, int muted)
 
 static void simple_callback(pa_context *c, int success, void *userdata)
 {
-	if (!success) {
-		fprintf(stderr, "Failure: %s\n",
-			pa_strerror(pa_context_errno(c)));
-	}
+	if (!success)
+		g_printerr("Failure: %s\n", pa_strerror(pa_context_errno(c)));
 }
 
 static unsigned int volume_pct_from_cv(const pa_cvolume *cv)
@@ -109,8 +107,8 @@ static void change_sink_volume_callback(pa_context *c, const pa_sink_info *i,
 	int j;
 
 	if (is_last < 0) {
-		fprintf(stderr, "Failed to get sink information: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Failed to get sink information: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 
@@ -131,8 +129,8 @@ static void change_sink_volume_callback(pa_context *c, const pa_sink_info *i,
 	o = pa_context_set_sink_volume_by_name(c, i->name, &cv, simple_callback,
 					       NULL);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -148,8 +146,8 @@ static void change_volume(pa_context *c, intptr_t increment)
 					     change_sink_volume_callback,
 					     (void *)increment);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -161,8 +159,8 @@ static void sink_toggle_mute_callback(pa_context *c, const pa_sink_info *i,
 	pa_operation *o;
 
 	if (is_last < 0) {
-		fprintf(stderr, "Failed to get sink information: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Failed to get sink information: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 
@@ -172,8 +170,8 @@ static void sink_toggle_mute_callback(pa_context *c, const pa_sink_info *i,
 	o = pa_context_set_sink_mute_by_name(c, i->name, !i->mute,
 					     simple_callback, NULL);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -188,8 +186,8 @@ static void toggle_mute(pa_context *c)
 	o = pa_context_get_sink_info_by_name(c, "@DEFAULT_SINK@",
 					     sink_toggle_mute_callback, NULL);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -201,8 +199,8 @@ static void source_toggle_mute_callback(pa_context *c, const pa_source_info *i,
 	pa_operation *o;
 
 	if (is_last < 0) {
-		fprintf(stderr, "Failed to get source information: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Failed to get source information: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 
@@ -212,8 +210,8 @@ static void source_toggle_mute_callback(pa_context *c, const pa_source_info *i,
 	o = pa_context_set_source_mute_by_name(c, i->name, !i->mute,
 					     simple_callback, NULL);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -227,8 +225,8 @@ static void toggle_mic_mute(pa_context *c)
 					       source_toggle_mute_callback,
 					       NULL);
 	if (!o) {
-		fprintf(stderr, "Operation failed: %s\n",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Operation failed: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		return;
 	}
 	pa_operation_unref(o);
@@ -273,8 +271,8 @@ static void context_state_callback(pa_context *c, void *userdata)
 		break;
 	case PA_CONTEXT_FAILED:
 	default:
-		fprintf(stderr, "Connection failure: %s",
-			pa_strerror(pa_context_errno(c)));
+		g_printerr("Connection failure: %s\n",
+			   pa_strerror(pa_context_errno(c)));
 		gtk_main_quit();
 		break;
 	}
@@ -298,7 +296,7 @@ int main(int argc, char **argv)
 
 	mainloop = pa_glib_mainloop_new(NULL);
 	if (!mainloop) {
-		fprintf(stderr, "pa_glib_mainloop_new() failed\n");
+		g_printerr("pa_glib_mainloop_new() failed\n");
 		status = EXIT_FAILURE;
 		goto out;
 	}
@@ -306,7 +304,7 @@ int main(int argc, char **argv)
 	mainloop_api = pa_glib_mainloop_get_api(mainloop);
 
 	if (pa_signal_init(mainloop_api) < 0) {
-		fprintf(stderr, "pa_signal_init() failed\n");
+		g_printerr("pa_signal_init() failed\n");
 		status = EXIT_FAILURE;
 		goto mainloop_free;
 	}
@@ -315,28 +313,28 @@ int main(int argc, char **argv)
 
 	context = pa_context_new(mainloop_api, NULL);
 	if (!context) {
-		fprintf(stderr, "pa_context_new() failed\n");
+		g_printerr("pa_context_new() failed\n");
 		status = EXIT_FAILURE;
 		goto mainloop_free;
 	}
 
 	pa_context_set_state_callback(context, context_state_callback, NULL);
 	if (pa_context_connect(context, NULL, 0, NULL) < 0) {
-		fprintf(stderr, "pa_context_connect() failed: %s\n",
-			pa_strerror(pa_context_errno(context)));
+		g_printerr("pa_context_connect() failed: %s\n",
+			   pa_strerror(pa_context_errno(context)));
 		status = EXIT_FAILURE;
 		goto context_unref;
 	}
 
 	if (!notify_init(APP_NAME)) {
-		fprintf(stderr, "Could not initialize libnotify\n");
+		g_printerr("Could not initialize libnotify\n");
 		status = EXIT_FAILURE;
 		goto context_unref;
 	}
 
 	notification = notify_notification_new(APP_NAME, NULL, NULL);
 	if (!notification) {
-		fprintf(stderr, "notify_notification_new() failed\n");
+		g_printerr("notify_notification_new() failed\n");
 		status = EXIT_FAILURE;
 		goto notify_uninit;
 	}
@@ -352,8 +350,8 @@ int main(int argc, char **argv)
 	for (i = 0; i < sizeof(keysyms) / sizeof(keysyms[0]); i++) {
 		keycodes[i] = XKeysymToKeycode(GDK_WINDOW_XDISPLAY(root), keysyms[i]);
 		if (!keycodes[i]) {
-			fprintf(stderr, "%s is not mapped on this keyboard\n",
-				XKeysymToString(keysyms[i]));
+			g_printerr("%s is not mapped on this keyboard\n",
+				   XKeysymToString(keysyms[i]));
 			continue;
 		}
 		XGrabKey(GDK_WINDOW_XDISPLAY(root), keycodes[i], AnyModifier,
